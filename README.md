@@ -4,23 +4,24 @@
 
 ## 🚀 Features
 
-- **Geospatial Business Discovery**: Find local businesses (restaurants, gyms, clinics, etc.) near you or globally using OSM-based reverse geocoding.
-- **Intelligent Document Parsing**: Upload a casual bio, CV, or company profile, and our ASI-1 powered engine extracts professional services and recommends the best industries to target.
-- **Autonomous Lead Research**: Select a business, and the AI actively browses the web to research the company's online presence, reviews, and local competitors.
-- **Hyper-Personalized Pitches**: Generates custom sales emails based on real-time web data, aligning your exact skills with the business's specific pain points.
-- **Automated Outreach & Tracking**: Send the generated emails seamlessly via your Gmail account with built-in open-tracking pixels.
+- **Find Local Businesses**: Easily find local businesses (like restaurants, gyms, or clinics) anywhere in the world right on our interactive map.
+- **Smart Profile Reader**: Just upload your casual bio or resume, and our AI will figure out exactly what professional services you offer and who you should sell them to.
+- **Auto-Researcher**: Pick a business from the map, and our AI will automatically search the internet to read their website, check their reviews, and find out what they might need help with.
+- **Perfect Sales Emails**: The AI writes a custom email for you that sounds totally natural and specifically mentions the business's current needs and how your unique skills can help them.
+- **Easy Email Sending**: Send those perfect emails straight from your Gmail account without leaving the app, and see exactly when the business opens them!
 
 ## 🧠 Powered by ASI-1
 
-This project makes extensive use of the **ASI-1** model via the ASI API, deeply integrated into both the backend AI processing and frontend UI.
+We use the **ASI-1** AI model as the brain of Vendly AI. Here is how it works behind the scenes in simple terms:
 
-- **Real-Time Web Search for Lead Context**: Uses `web_search=True` (passed in the `extra_body` payload) to give ASI-1 the ability to browse the real internet. It researches local competitors, regional market news, and specific pain points for the target business before generating its pitch.
-- **Streaming UI (Server-Sent Events)**: Uses `stream=True` to provide a fast, dynamic UI that types out the AI's complex reasoning and sales pitch chunk-by-chunk directly to the user interface.
-- **Zero-Shot Service Inference**: Replaces traditional keyword matching with deep reasoning. ASI-1 can read heavily unstructured text like "I build stuff out of wood" and infer structured, professional services like "Carpentry" or "Custom Furniture", and creatively map them to surprising B2B target industries (like recommending a carpenter partner with local event venues).
-- **Strict JSON Enforcement**: Driven by strict system prompts to output highly complex, nested JSON objects powering our internal data contracts (e.g., arrays of `pain_points`, `recommended_industries` with dynamically calculated `fit_scores`, and structured seller profiles). 
-- **Dual Verification UI (ASI-1 Score vs Heuristic Score)**: The frontend integrates an *ASI-1 Refined Score* feature. It actively compares the application's internal heuristic matching algorithm against ASI-1's deep reasoning score. Lead cards feature golden animated UI badges and a "Best Leads" banner that dynamically updates based exclusively on ASI-1's real-time judgement capabilities.
+### 1. The Smart Researcher & Writer (Using Web Search)
+When you choose a business to contact, ASI-1 goes out onto the real internet. It reads their website, looks at their recent customer reviews, and figures out what problems they are currently facing. Then, it uses everything it found to write a highly personal, customized email that sounds like a real human wrote it. You can even watch it thinking and typing on the screen in real-time!
 
-For a full breakdown of ASI1 integration, see [ASI1_HACKATHON_USAGE.md](ASI1_HACKATHON_USAGE.md).
+### 2. The Resume Reader (Smart Document Parser)
+You can upload a super casual bio like "I build stuff out of wood," and ASI-1 is smart enough to understand that you are a professional Carpenter. It doesn't just look for exact keywords; it understands what your skills mean. Then, it uses that understanding to suggest the best types of businesses you should try to partner with.
+
+### 3. Double-Checking the Match (AI Scoring)
+Our app has a basic formula to guess if a business is a good match for you. But we also ask ASI-1 to give its own "Smart Score." When ASI-1's deep thinking decides a business is a perfect match, that business gets a special gold badge on the screen so you know exactly who to email first!
 
 ## 🛠️ Setup & Installation
 
