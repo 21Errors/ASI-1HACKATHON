@@ -1,0 +1,2075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendly</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #09090b;
+            color: #fafafa;
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 24px 48px;
+        }
+
+        .state { display: none; }
+        .state.active { display: block; }
+
+        .state-landing {
+            display: flex !important;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 52px);
+            text-align: center;
+        }
+
+        .state-setup.two-column-layout {
+            display: grid !important;
+            grid-template-columns: 38% 1fr;
+            gap: 0;
+        }
+        .state-setup.two-column-layout .profile-column {
+            display: block !important;
+            border-right: 1px solid #27272a;
+            overflow-y: auto;
+            padding: 24px 24px 24px 0;
+            grid-column: 1;
+            grid-row: 3;
+        }
+        .state-setup.two-column-layout .results-column {
+            display: block !important;
+            overflow-y: auto;
+            padding: 24px 0 24px 24px;
+            grid-column: 2;
+            grid-row: 3;
+        }
+        .state-setup.two-column-layout .header {
+            grid-column: 1 / -1;
+            grid-row: 1;
+            border-bottom: 1px solid #27272a;
+            padding-bottom: 16px;
+            margin-bottom: 0;
+        }
+        .state-setup.two-column-layout .location-badge {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            border-bottom: 1px solid #27272a;
+            padding: 12px 0;
+            margin-bottom: 0;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes badgeFlash {
+            0% { background: rgba(56,189,248,0.2); }
+            50% { background: rgba(56,189,248,0.4); }
+            100% { background: rgba(56,189,248,0.1); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; transform: translateY(6px); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.3); } }
+
+        /* NAV */
+        .tab-bar {
+            display: flex;
+            align-items: center;
+            background: #09090b;
+            border-bottom: 1px solid #27272a;
+            padding: 0 24px;
+            height: 52px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .nav-brand {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fafafa;
+            margin-right: 32px;
+            letter-spacing: -0.4px;
+        }
+        .nav-brand span { color: #38bdf8; }
+        .tab {
+            padding: 0 14px;
+            height: 52px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: #71717a;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s;
+            display: flex;
+            align-items: center;
+        }
+        .tab:hover { color: #a1a1aa; }
+        .tab.active { color: #fafafa; border-bottom-color: #38bdf8; font-weight: 600; }
+
+        /* BUTTONS */
+        .btn {
+            background: #38bdf8;
+            color: #09090b;
+            border: none;
+            padding: 9px 20px;
+            font-size: 13px;
+            font-weight: 700;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: background 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn:hover { background: #7dd3fc; }
+        .btn:active { background: #bae6fd; }
+
+        .btn-secondary {
+            background: transparent;
+            color: #a1a1aa;
+            border: 1px solid #3f3f46;
+            padding: 9px 20px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-secondary:hover { background: #18181b; color: #fafafa; border-color: #52525b; }
+
+        .btn-sm {
+            padding: 5px 11px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 5px;
+            border: 1px solid #3f3f46;
+            background: #18181b;
+            color: #a1a1aa;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .btn-sm:hover { background: #27272a; color: #fafafa; }
+        .btn-sm.primary { background: #38bdf8; color: #09090b; border-color: #38bdf8; font-weight: 700; }
+        .btn-sm.primary:hover { background: #7dd3fc; }
+        .btn-sm.danger { background: transparent; color: #ef4444; border-color: #3f3f46; }
+        .btn-sm.danger:hover { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); }
+
+        .btn-icon {
+            background: transparent;
+            border: 1px solid #3f3f46;
+            color: #71717a;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 6px;
+            transition: all 0.15s;
+        }
+        .btn-icon:hover { background: #18181b; color: #fafafa; }
+
+        /* FORMS */
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .form-group label, .form-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #71717a;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+        .form-input, .form-group input, .form-group select {
+            background: #18181b;
+            border: 1px solid #3f3f46;
+            color: #fafafa;
+            padding: 9px 12px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            outline: none;
+            width: 100%;
+        }
+        .form-input:focus, .form-group input:focus, .form-group select:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56,189,248,0.12);
+        }
+        .form-group select option { background: #18181b; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+        /* LANDING */
+        .landing-badge {
+            display: inline-block;
+            background: rgba(56,189,248,0.08);
+            border: 1px solid rgba(56,189,248,0.2);
+            color: #38bdf8;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+        .landing-title {
+            font-size: 64px;
+            font-weight: 800;
+            color: #fafafa;
+            margin-bottom: 16px;
+            letter-spacing: -3px;
+            line-height: 1.0;
+        }
+        .landing-subtitle {
+            font-size: 16px;
+            color: #71717a;
+            margin-bottom: 40px;
+            max-width: 420px;
+            line-height: 1.7;
+        }
+        .landing-help { margin-top: 14px; font-size: 12px; color: #52525b; }
+
+        /* SETUP */
+        .state-setup { padding-top: 24px; }
+        .header { display: flex; align-items: center; margin-bottom: 24px; gap: 12px; }
+        .header-back {
+            cursor: pointer;
+            color: #71717a;
+            font-size: 16px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.15s;
+            border: 1px solid #3f3f46;
+            background: transparent;
+        }
+        .header-back:hover { background: #18181b; color: #fafafa; }
+        .header-title { font-size: 20px; font-weight: 700; color: #fafafa; }
+
+        .location-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #18181b;
+            border: 1px solid #27272a;
+            color: #a1a1aa;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 24px;
+        }
+
+        /* SETUP PANELS */
+        .setup-panels { display: grid; grid-template-columns: 1.5fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .setup-panel { background: #18181b; border: 1px solid #27272a; border-radius: 10px; padding: 18px; }
+        .setup-panel.primary { border-color: rgba(56,189,248,0.25); }
+        .setup-panel.secondary { opacity: 0.85; }
+        .setup-panel-title { font-size: 13px; font-weight: 700; color: #fafafa; margin-bottom: 3px; }
+        .setup-panel-subtitle { font-size: 11px; color: #52525b; margin-bottom: 14px; }
+
+        /* UPLOAD */
+        .upload-area {
+            border: 1px dashed #3f3f46;
+            border-radius: 8px;
+            padding: 28px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 12px;
+            background: #09090b;
+        }
+        .upload-area:hover { border-color: #38bdf8; background: rgba(56,189,248,0.03); }
+        .upload-area.dragging { border-color: #38bdf8; background: rgba(56,189,248,0.05); }
+        .upload-area-icon { font-size: 22px; margin-bottom: 8px; color: #52525b; }
+        .upload-area-text { font-size: 13px; color: #a1a1aa; font-weight: 500; margin-bottom: 3px; }
+        .upload-area-hint { font-size: 11px; color: #52525b; }
+        #docInput { display: none; }
+        .file-selected { font-size: 12px; color: #22c55e; margin-top: 8px; display: flex; align-items: center; gap: 5px; font-weight: 500; }
+
+        .analyze-btn {
+            background: #38bdf8;
+            color: #09090b;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 12px;
+            width: 100%;
+            transition: background 0.15s;
+            margin-bottom: 12px;
+        }
+        .analyze-btn:hover { background: #7dd3fc; }
+        .analyze-btn:disabled { background: #27272a; color: #52525b; cursor: not-allowed; }
+
+        /* PROFILE INFO */
+        .profile-info {
+            display: none;
+            background: rgba(34,197,94,0.07);
+            border: 1px solid rgba(34,197,94,0.2);
+            border-radius: 7px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .profile-info.active { display: block; }
+        .profile-name { font-weight: 600; color: #22c55e; margin-bottom: 4px; font-size: 12px; }
+        .profile-summary { font-size: 12px; color: #a1a1aa; line-height: 1.5; }
+
+        /* SERVICE PILLS */
+        .services-label { font-size: 10px; font-weight: 700; color: #52525b; margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.6px; }
+        .services-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .service-pill, .service-chip {
+            background: #09090b;
+            border: 1px solid #3f3f46;
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: #a1a1aa;
+            user-select: none;
+            display: inline-block;
+        }
+        .service-pill:hover, .service-chip:hover { border-color: #38bdf8; color: #38bdf8; }
+        .service-pill.selected, .service-chip.selected { background: rgba(56,189,248,0.12); border-color: #38bdf8; color: #38bdf8; }
+        .service-pill.high-confidence, .service-chip.high-confidence { border-color: rgba(34,197,94,0.3); }
+        .service-pill.high-confidence.selected, .service-chip.high-confidence.selected { background: rgba(34,197,94,0.1); border-color: #22c55e; color: #22c55e; }
+        .service-chip-label { font-weight: 500; }
+        .service-chip-confidence { font-size: 10px; opacity: 0.5; margin-left: 3px; }
+
+        /* SELLER BANNER */
+        .seller-summary-banner {
+            display: none;
+            background: #18181b;
+            border-left: 2px solid #38bdf8;
+            padding: 9px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #71717a;
+            margin-bottom: 14px;
+        }
+        .seller-summary-banner.active { display: block; }
+
+        /* LOCATION SECTION */
+        .location-section { background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 14px; margin-bottom: 16px; }
+        .location-section-title { font-size: 10px; font-weight: 700; color: #52525b; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.6px; }
+        .location-toggle-buttons { display: flex; gap: 6px; margin-bottom: 12px; }
+        .location-toggle-btn {
+            flex: 1;
+            padding: 7px 10px;
+            border: 1px solid #3f3f46;
+            background: transparent;
+            color: #71717a;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+        .location-toggle-btn:hover { border-color: #52525b; color: #a1a1aa; }
+        .location-toggle-btn.active { background: #38bdf8; border-color: #38bdf8; color: #09090b; font-weight: 700; }
+        .location-content { display: none; }
+        .location-content.active { display: block; }
+        .location-info { font-size: 12px; color: #71717a; margin-bottom: 12px; padding: 7px 10px; background: #09090b; border: 1px solid #27272a; border-radius: 5px; }
+        .location-city-input, .manual-service-input {
+            width: 100%;
+            background: #09090b;
+            border: 1px solid #3f3f46;
+            color: #fafafa;
+            padding: 8px 12px;
+            border-radius: 7px;
+            font-size: 12px;
+            font-family: inherit;
+            transition: all 0.15s;
+            margin-bottom: 6px;
+            outline: none;
+        }
+        .location-city-input:focus, .manual-service-input:focus { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56,189,248,0.12); }
+        .location-city-input::placeholder, .manual-service-input::placeholder { color: #3f3f46; }
+        .location-city-hint { font-size: 11px; color: #52525b; margin-bottom: 12px; }
+
+        /* RANGE SELECTOR */
+        .range-selector-label { font-size: 10px; font-weight: 700; color: #52525b; margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.6px; }
+        .range-options { display: flex; flex-wrap: wrap; gap: 6px; }
+        .range-option {
+            flex: 1;
+            min-width: 80px;
+            padding: 7px 10px;
+            border: 1px solid #3f3f46;
+            background: transparent;
+            color: #71717a;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 500;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .range-option:hover { border-color: #52525b; color: #a1a1aa; }
+        .range-option.selected { background: #18181b; border-color: #38bdf8; color: #38bdf8; font-weight: 600; }
+
+        /* INDUSTRY CARDS */
+        .recommended-industries { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+        .industry-card {
+            background: #09090b;
+            border: 1px solid #3f3f46;
+            border-radius: 7px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.15s;
+            flex: 0 1 calc(50% - 4px);
+            user-select: none;
+        }
+        .industry-card:hover { border-color: #52525b; }
+        .industry-card.selected { background: rgba(56,189,248,0.05); border-color: #38bdf8; }
+        .industry-card-name { font-size: 12px; font-weight: 600; color: #fafafa; margin-bottom: 3px; }
+        .industry-card-reason { font-size: 10px; color: #52525b; margin-bottom: 6px; line-height: 1.3; }
+        .industry-fit-bar { width: 100%; height: 2px; background: #27272a; border-radius: 1px; overflow: hidden; margin-bottom: 2px; }
+        .industry-fit-fill { height: 100%; background: #38bdf8; border-radius: 1px; }
+        .industry-fit-score { font-size: 10px; color: #52525b; text-align: right; }
+        .industries-count { font-size: 11px; color: #52525b; }
+
+        .add-more-industries-btn {
+            width: 100%;
+            background: transparent;
+            border: 1px dashed #3f3f46;
+            color: #52525b;
+            padding: 7px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .add-more-industries-btn:hover { border-color: #52525b; color: #71717a; }
+        .add-more-dropdown select {
+            width: 100%;
+            background: #09090b;
+            border: 1px solid #3f3f46;
+            color: #fafafa;
+            padding: 7px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+            outline: none;
+        }
+
+        /* SLIDER */
+        .slider-group { margin-bottom: 18px; }
+        .slider-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .slider-label span:first-child { font-size: 10px; font-weight: 700; color: #52525b; text-transform: uppercase; letter-spacing: 0.6px; }
+        .slider-value {
+            background: #18181b;
+            color: #38bdf8;
+            padding: 3px 10px;
+            border-radius: 5px;
+            font-weight: 700;
+            font-size: 12px;
+            border: 1px solid rgba(56,189,248,0.2);
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 3px;
+            border-radius: 2px;
+            background: #27272a;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            transition: box-shadow 0.15s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover { box-shadow: 0 0 0 5px rgba(56,189,248,0.15); }
+        input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: #38bdf8; cursor: pointer; border: none; }
+
+        /* RESULTS */
+        .results-header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+        .results-title { font-size: 16px; font-weight: 700; color: #fafafa; }
+        .pulse-dot { width: 7px; height: 7px; background: #22c55e; border-radius: 50%; animation: pulse 2s infinite; }
+
+        /* LEADS GRID */
+        .leads-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+        .lead-card {
+            background: #18181b;
+            border: 1px solid #27272a;
+            border-radius: 10px;
+            padding: 16px;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .lead-card:hover { border-color: #3f3f46; background: #1c1c1f; }
+        .lead-header { display: flex; flex-direction: column; gap: 4px; }
+        .lead-name { font-size: 14px; font-weight: 700; color: #fafafa; }
+        .lead-location { font-size: 11px; color: #52525b; }
+        .lead-meta { display: flex; flex-wrap: wrap; gap: 5px; }
+
+        /* BADGES */
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+        .badge-industry { background: #27272a; color: #a1a1aa; border: 1px solid #3f3f46; }
+        .badge-distance { background: #1a1a1d; color: #71717a; border: 1px solid #27272a; }
+        .badge-website { background: rgba(34,197,94,0.08); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+        .badge-no-website { background: rgba(239,68,68,0.07); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+        .badge-phone { background: rgba(245,158,11,0.07); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+
+        .fit-badge-gold { background: rgba(245,158,11,0.1) !important; color: #f59e0b !important; border: 1px solid rgba(245,158,11,0.25) !important; font-weight: 700; }
+        .fit-badge-silver { background: rgba(161,161,170,0.1) !important; color: #a1a1aa !important; border: 1px solid rgba(161,161,170,0.25) !important; font-weight: 600; }
+        .fit-badge-bronze { background: rgba(249,115,22,0.08) !important; color: #fb923c !important; border: 1px solid rgba(249,115,22,0.2) !important; }
+        .fit-badge-grey { background: rgba(63,63,70,0.5) !important; color: #52525b !important; border: 1px solid #3f3f46 !important; }
+
+        .lead-reasons { font-size: 11px; color: #52525b; line-height: 1.4; }
+        .lead-address { font-size: 11px; color: #52525b; line-height: 1.4; }
+        .lead-intel { font-size: 10px; color: #3f3f46; padding: 6px 8px; background: #09090b; border-radius: 4px; }
+
+        .lead-btn {
+            background: #27272a;
+            color: #a1a1aa;
+            border: 1px solid #3f3f46;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: all 0.15s;
+            width: 100%;
+        }
+        .lead-btn:hover { background: #38bdf8; color: #09090b; border-color: #38bdf8; }
+
+        /* PITCH PANEL */
+        .pitch-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            backdrop-filter: blur(2px);
+        }
+        .pitch-overlay.active { display: block; }
+        .pitch-panel {
+            position: fixed;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 500px;
+            background: #0f0f11;
+            border-left: 1px solid #27272a;
+            overflow-y: auto;
+            z-index: 1001;
+            animation: slideIn 0.25s ease;
+            display: none;
+        }
+        .pitch-header {
+            position: sticky;
+            top: 0;
+            background: #0f0f11;
+            padding: 16px 20px;
+            border-bottom: 1px solid #27272a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+        .pitch-title { font-size: 14px; font-weight: 700; color: #fafafa; }
+        .pitch-close {
+            cursor: pointer;
+            color: #52525b;
+            font-size: 16px;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+            transition: all 0.15s;
+            border: 1px solid #27272a;
+        }
+        .pitch-close:hover { background: #18181b; color: #fafafa; }
+        .pitch-content { padding: 18px 20px; }
+
+        .status-bar {
+            background: #18181b;
+            border: 1px solid #27272a;
+            padding: 9px 14px;
+            border-radius: 6px;
+            margin-bottom: 18px;
+            font-size: 12px;
+            color: #71717a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .spinner {
+            display: inline-block;
+            width: 11px;
+            height: 11px;
+            border: 2px solid #27272a;
+            border-top-color: #38bdf8;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+
+        /* PITCH SECTIONS */
+        .section { margin-bottom: 22px; animation: fadeIn 0.3s ease forwards; opacity: 0; }
+        .section:nth-of-type(1) { animation-delay: 0.1s; }
+        .section:nth-of-type(2) { animation-delay: 0.2s; }
+        .section:nth-of-type(3) { animation-delay: 0.3s; }
+        .section:nth-of-type(4) { animation-delay: 0.4s; }
+        .section:nth-of-type(5) { animation-delay: 0.5s; }
+        .section:nth-of-type(6) { animation-delay: 0.6s; }
+
+        .section-label { font-size: 10px; font-weight: 700; color: #52525b; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+        .fit-score { display: flex; align-items: center; gap: 16px; }
+        .score-circle {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            font-weight: 800;
+            flex-shrink: 0;
+            border: 2px solid;
+        }
+        .score-1, .score-2, .score-3, .score-4 { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); color: #ef4444; }
+        .score-5, .score-6, .score-7 { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.3); color: #f59e0b; }
+        .score-8, .score-9, .score-10 { background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.3); color: #22c55e; }
+        .score-info h3 { font-size: 12px; font-weight: 600; margin-bottom: 5px; color: #a1a1aa; }
+        .score-info p { font-size: 12px; color: #71717a; line-height: 1.6; }
+
+        .pain-points { display: flex; flex-direction: column; gap: 7px; }
+        .pain-point {
+            background: rgba(239,68,68,0.06);
+            border-left: 2px solid rgba(239,68,68,0.3);
+            padding: 9px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #a1a1aa;
+            line-height: 1.5;
+        }
+        .best-angle {
+            background: #18181b;
+            border-left: 2px solid #38bdf8;
+            padding: 11px 14px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #e4e4e7;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        /* SCORE COMPARISON */
+        .score-comparison { background: #18181b; border: 1px solid #27272a; border-radius: 7px; padding: 12px; margin-bottom: 12px; }
+        .score-comparison-row { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+        .score-col { flex: 1; }
+        .score-col-label { font-size: 10px; color: #52525b; margin-bottom: 3px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+        .score-col-value { font-size: 14px; font-weight: 700; color: #fafafa; }
+        .score-col-value.asi { color: #22c55e; }
+        .score-arrow { font-size: 14px; color: #3f3f46; font-weight: 600; }
+        .score-comparison-note { font-size: 11px; font-weight: 600; }
+        .score-comparison-note.good { color: #22c55e; }
+        .score-comparison-note.warn { color: #f59e0b; }
+
+        /* PERSONALIZATION */
+        .personalization-notice { padding: 8px 12px; border-radius: 5px; margin-bottom: 14px; font-size: 11px; font-weight: 600; border-left: 2px solid; }
+        .personalization-notice.personalized { background: rgba(34,197,94,0.07); border-color: rgba(34,197,94,0.4); color: #22c55e; }
+        .personalization-notice.generic { background: #18181b; border-color: #3f3f46; color: #52525b; }
+
+        /* EMAIL TEMPLATE */
+        .pitch-email-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: #09090b;
+            border: 1px solid #3f3f46;
+            color: #fafafa;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.15s;
+            margin-bottom: 8px;
+        }
+        .pitch-email-input:focus { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56,189,248,0.1); }
+        .pitch-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: #09090b;
+            border: 1px solid #3f3f46;
+            color: #e4e4e7;
+            border-radius: 6px;
+            font-size: 12px;
+            min-height: 180px;
+            resize: vertical;
+            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+            outline: none;
+            transition: border-color 0.15s;
+            line-height: 1.6;
+        }
+        .pitch-textarea:focus { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56,189,248,0.1); }
+        .field-label { font-size: 10px; color: #52525b; margin-bottom: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; display: block; }
+        .regen-btn {
+            background: #18181b;
+            color: #71717a;
+            border: 1px solid #27272a;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.15s;
+        }
+        .regen-btn:hover { background: #27272a; color: #a1a1aa; }
+        .copy-btn {
+            background: #38bdf8;
+            color: #09090b;
+            border: none;
+            padding: 9px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 12px;
+            width: 100%;
+            margin-top: 10px;
+            transition: background 0.15s;
+        }
+        .copy-btn:hover { background: #7dd3fc; }
+        .copy-btn.copied { background: #22c55e; color: #09090b; }
+
+        /* CONFIDENCE */
+        .confidence-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.4px; }
+        .confidence-low { background: rgba(239,68,68,0.08); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+        .confidence-medium { background: rgba(245,158,11,0.08); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+        .confidence-high { background: rgba(34,197,94,0.08); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+
+        /* DEBUG */
+        .debug-section { margin-top: 18px; border-top: 1px solid #27272a; padding-top: 14px; }
+        .debug-toggle { cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; color: #3f3f46; margin-bottom: 10px; transition: color 0.15s; user-select: none; }
+        .debug-toggle:hover { color: #52525b; }
+        .debug-toggle.active { color: #71717a; }
+        .debug-content { display: none; background: #09090b; border: 1px solid #27272a; border-radius: 7px; padding: 12px; font-size: 11px; }
+        .debug-content.active { display: block; }
+        .debug-box {
+            background: #000000;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 8px;
+            font-family: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+            color: #38bdf8;
+            overflow-x: auto;
+            max-height: 180px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 11px;
+        }
+
+        /* BEST LEADS BANNER */
+        .best-leads-banner {
+            background: rgba(245,158,11,0.06);
+            border: 1px solid rgba(245,158,11,0.15);
+            border-left: 2px solid #f59e0b;
+            padding: 11px 14px;
+            border-radius: 7px;
+            margin-bottom: 14px;
+        }
+        .best-leads-banner-title { font-weight: 700; color: #f59e0b; font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 2px; }
+        .best-leads-banner-content { color: #a1a1aa; font-size: 12px; font-weight: 500; }
+
+        /* PIPELINE */
+        .state-pipeline { padding-top: 24px; }
+        .pipeline-stats { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+        .stat-badge {
+            background: #18181b;
+            border: 1px solid #27272a;
+            padding: 14px 20px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+            flex: 1;
+            min-width: 100px;
+        }
+        .stat-label { font-size: 10px; color: #52525b; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; }
+        .stat-count { font-size: 28px; font-weight: 800; color: #fafafa; line-height: 1; }
+
+        .pipeline-table-wrapper { overflow-x: auto; border-radius: 8px; border: 1px solid #27272a; }
+        .pipeline-table { width: 100%; border-collapse: collapse; background: #18181b; }
+        .pipeline-table thead { background: #09090b; border-bottom: 1px solid #27272a; }
+        .pipeline-table th { padding: 11px 14px; text-align: left; font-weight: 700; color: #52525b; font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; }
+        .pipeline-table td { padding: 12px 14px; border-bottom: 1px solid #1c1c1f; font-size: 12px; color: #a1a1aa; }
+        .pipeline-table tbody tr:last-child td { border-bottom: none; }
+        .pipeline-table tbody tr:hover { background: #1c1c1f; }
+        .lead-name { font-weight: 600; color: #fafafa; }
+        .lead-industry { font-size: 10px; color: #52525b; margin-top: 3px; }
+
+        /* STATUS PILLS */
+        .status-pill { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+        .status-pill.researched, .status-pill.status-researched { background: #27272a; color: #71717a; border: 1px solid #3f3f46; }
+        .status-pill.sent, .status-pill.status-sent { background: rgba(56,189,248,0.1); color: #38bdf8; border: 1px solid rgba(56,189,248,0.2); }
+        .status-pill.opened, .status-pill.status-opened { background: rgba(245,158,11,0.08); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+        .status-pill.replied, .status-pill.status-replied { background: rgba(34,197,94,0.08); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+
+        .fit-badge { display: inline-block; padding: 3px 9px; border-radius: 4px; font-size: 11px; font-weight: 700; text-align: center; min-width: 44px; }
+        .fit-badge.fit-1, .fit-badge.fit-2, .fit-badge.fit-3, .fit-badge.fit-4 { background: rgba(239,68,68,0.08); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+        .fit-badge.fit-5, .fit-badge.fit-6, .fit-badge.fit-7 { background: rgba(245,158,11,0.08); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+        .fit-badge.fit-8, .fit-badge.fit-9, .fit-badge.fit-10 { background: rgba(34,197,94,0.08); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+
+        .industry-badge { display: inline-block; background: #27272a; border: 1px solid #3f3f46; color: #52525b; padding: 2px 7px; border-radius: 3px; font-size: 10px; font-weight: 500; margin-top: 3px; }
+        .email-text { color: #38bdf8; font-size: 11px; }
+        .email-input { background: #09090b; border: 1px solid #3f3f46; color: #fafafa; padding: 4px 8px; border-radius: 4px; font-size: 11px; width: 100%; max-width: 140px; outline: none; }
+        .email-input:focus { border-color: #38bdf8; }
+        .action-buttons { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+
+        /* MODAL */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .modal-overlay.active { display: flex; }
+        .modal { background: #18181b; border: 1px solid #27272a; border-radius: 12px; padding: 22px; max-width: 400px; width: 90%; box-shadow: 0 25px 80px rgba(0,0,0,0.5); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #27272a; padding-bottom: 12px; }
+        .modal-header h3 { font-size: 14px; font-weight: 700; color: #fafafa; margin: 0; }
+        .modal-close { background: transparent; border: none; color: #52525b; font-size: 16px; cursor: pointer; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.15s; }
+        .modal-close:hover { background: #27272a; color: #a1a1aa; }
+        .modal-body { margin-bottom: 16px; }
+        .modal-footer { display: flex; gap: 10px; justify-content: flex-end; }
+        .email-preview { background: #09090b; border: 1px solid #27272a; border-radius: 6px; padding: 11px; margin-bottom: 12px; font-size: 12px; }
+
+        /* TOAST */
+        .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 7px; pointer-events: none; }
+        .toast { background: #18181b; color: #fafafa; border: 1px solid #27272a; padding: 10px 16px; border-radius: 7px; font-weight: 500; font-size: 12px; animation: slideUp 0.25s ease-out; pointer-events: auto; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+        .toast.toast-success { border-color: rgba(34,197,94,0.3); color: #22c55e; }
+        .toast.toast-error { border-color: rgba(239,68,68,0.3); color: #ef4444; }
+        .toast.toast-info { color: #a1a1aa; }
+        .toast.toast-warning { border-color: rgba(245,158,11,0.3); color: #f59e0b; }
+        .toast.fade-out { animation: fadeOut 0.25s ease-out; }
+
+        /* LOADING / ERROR */
+        .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; gap: 14px; color: #52525b; font-size: 13px; }
+        .loading-spinner { width: 32px; height: 32px; border: 2px solid #27272a; border-top-color: #38bdf8; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        .error-message { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.2); color: #ef4444; padding: 9px 14px; border-radius: 6px; margin: 14px 0; font-size: 12px; }
+
+        @media (max-width: 768px) {
+            .industry-card { flex: 0 1 100%; }
+            .setup-panels { grid-template-columns: 1fr; }
+            .setup-panel.secondary { opacity: 1; }
+            .form-grid { grid-template-columns: 1fr; }
+            .leads-grid { grid-template-columns: 1fr; }
+            .pitch-panel { width: 100%; }
+            .landing-title { font-size: 40px; }
+            .pipeline-stats { gap: 8px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="tab-bar">
+        <div class="nav-brand">Vend<span>ly</span></div>
+        <button class="tab active" onclick="switchTab('find')">Discover</button>
+        <button class="tab" onclick="switchTab('pipeline')">Pipeline</button>
+    </div>
+
+    <div class="container">
+
+        <!-- LANDING -->
+        <div id="landing" class="state state-landing active">
+            <div class="landing-badge">AI-Powered B2B Lead Intelligence</div>
+            <h1 class="landing-title">Vendly</h1>
+            <p class="landing-subtitle">Find real businesses near you. Research them with ASI-1. Pitch them.</p>
+            <button class="btn" onclick="detectLocation()">Detect My Location</button>
+            <div class="landing-help">Uses your GPS to find nearby businesses worldwide</div>
+        </div>
+
+        <!-- SETUP -->
+        <div id="setup" class="state state-setup">
+            <div class="header">
+                <div class="header-back" onclick="goBack()">&#8592;</div>
+                <h2 class="header-title">Find Leads</h2>
+            </div>
+
+            <div class="location-badge" id="locationBadge">Detecting location...</div>
+
+            <div class="profile-column">
+                <div class="setup-panels">
+                    <div class="setup-panel primary">
+                        <div class="setup-panel-title">Upload Your Profile</div>
+                        <div class="setup-panel-subtitle">ASI-1 will extract your services automatically</div>
+                        <div class="upload-area" id="uploadArea" onclick="document.getElementById('docInput').click()">
+                            <div class="upload-area-icon">&#8679;</div>
+                            <div class="upload-area-text">Drag & drop or click to browse</div>
+                            <div class="upload-area-hint">PDF or DOCX, max 10MB</div>
+                        </div>
+                        <input type="file" id="docInput" accept=".pdf,.docx" onchange="handleFileSelect(event)">
+                        <div id="fileSelected" class="file-selected" style="display:none;">
+                            &#10003; <span id="fileName"></span>
+                        </div>
+                        <button class="analyze-btn" id="analyzeBtn" onclick="analyzeDocument()" disabled>Analyze Document</button>
+                        <div class="profile-info" id="profileInfo">
+                            <div class="profile-name" id="profileName"></div>
+                            <div class="profile-summary" id="profileSummary"></div>
+                        </div>
+                        <span class="services-label">Your Services</span>
+                        <div class="services-list" id="servicesList"></div>
+                        <div id="recommendedIndustriesSection" style="margin-top: 16px; display: none;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span style="font-size: 10px; font-weight: 700; color: #52525b; text-transform: uppercase; letter-spacing: 0.6px;">Recommended Industries</span>
+                                <span class="industries-count" id="industriesCount"></span>
+                            </div>
+                            <div class="recommended-industries" id="recommendedIndustries"></div>
+                            <button class="add-more-industries-btn" id="addMoreBtn" onclick="expandAddMore()" style="margin-top: 10px; display: none;">+ Add more industries</button>
+                            <div class="add-more-dropdown" id="addMoreDropdown" style="display: none; margin-top: 6px;">
+                                <select id="additionalIndustriesSelect" onchange="addIndustry(this)">
+                                    <option value="">Select an industry...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="setup-panel secondary">
+                        <div class="setup-panel-title">Or enter manually</div>
+                        <label class="form-label" style="display:block; margin-bottom:6px;">Describe your service</label>
+                        <input type="text" id="serviceInput" class="manual-service-input" placeholder="e.g. web design, accounting">
+                    </div>
+                </div>
+
+                <div class="seller-summary-banner" id="sellerBanner"></div>
+
+                <div class="location-section">
+                    <div class="location-section-title">Search Location</div>
+                    <div class="location-toggle-buttons">
+                        <button class="location-toggle-btn active" id="useLocationBtn" onclick="toggleLocationMode('location')">Use My Location</button>
+                        <button class="location-toggle-btn" id="searchCityBtn" onclick="toggleLocationMode('city')">Search a City</button>
+                    </div>
+                    <div id="locationModeContent" class="location-content active">
+                        <div class="location-info" id="detectedLocation">Detected location will appear here</div>
+                        <div class="range-selector">
+                            <label class="range-selector-label">Search Range</label>
+                            <div class="range-options" id="rangeOptionsContainer">
+                                <button class="range-option selected" data-range="nearby" onclick="selectRange(this)">Nearby (5km)</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="cityModeContent" class="location-content">
+                        <input type="text" id="cityInput" class="location-city-input" placeholder="Enter any city worldwide">
+                        <div class="location-city-hint">e.g. London, Dubai, Mumbai, Lagos, New York</div>
+                        <div class="range-selector">
+                            <label class="range-selector-label">Search Range</label>
+                            <div class="range-options">
+                                <button class="range-option selected" data-range="nearby" onclick="selectRange(this)">Nearby (5km)</button>
+                                <button class="range-option" data-range="district" onclick="selectRange(this)">District (25km)</button>
+                                <button class="range-option" data-range="country" onclick="selectRange(this)">Country (100km)</button>
+                                <button class="range-option" data-range="international" onclick="selectRange(this)">International</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Industry Type</label>
+                        <select id="industrySelect"><option value="">Loading industries...</option></select>
+                    </div>
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Number of Leads</span>
+                        <span class="slider-value" id="limitValue">10</span>
+                    </div>
+                    <input type="range" id="limitSlider" min="5" max="20" value="10">
+                </div>
+
+                <button class="btn" id="findLeadsBtn" onclick="findLeads()">Find Leads Near Me &rarr;</button>
+                <button class="btn btn-secondary" id="searchAgainBtn" onclick="searchAgain()" style="display:none; margin-top:8px;">Search Again</button>
+            </div>
+
+            <div class="results-column" style="display: none;">
+                <div class="results-header">
+                    <h3 class="results-title" id="resultsTitle">Found 0 businesses</h3>
+                    <div class="pulse-dot"></div>
+                </div>
+                <div class="seller-summary-banner" id="resultSellerBanner"></div>
+                <div id="resultsBanner"></div>
+                <div id="leadsContainer" class="leads-grid"></div>
+            </div>
+        </div>
+
+        <!-- PIPELINE -->
+        <div id="pipeline" class="state state-pipeline">
+            <div class="header">
+                <h2 class="header-title">Lead Pipeline</h2>
+                <button class="btn-icon" onclick="refreshPipeline()" title="Refresh">&#8635;</button>
+            </div>
+            <div class="pipeline-stats">
+                <div class="stat-badge"><span class="stat-label">Researched</span><span class="stat-count" id="statResearched">0</span></div>
+                <div class="stat-badge"><span class="stat-label">Sent</span><span class="stat-count" id="statSent">0</span></div>
+                <div class="stat-badge"><span class="stat-label">Opened</span><span class="stat-count" id="statOpened">0</span></div>
+                <div class="stat-badge"><span class="stat-label">Replied</span><span class="stat-count" id="statReplied">0</span></div>
+            </div>
+            <div class="pipeline-table-wrapper">
+                <table class="pipeline-table" id="pipelineTable">
+                    <thead>
+                        <tr>
+                            <th>Business</th><th>Location</th><th>Service</th>
+                            <th>Fit Score</th><th>Status</th><th>Email</th><th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pipelineBody">
+                        <tr><td colspan="7" style="text-align:center;padding:48px;color:#52525b;">
+                            <div class="loading-spinner" style="margin:0 auto 12px;"></div><p>Loading pipeline...</p>
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- PITCH PANEL -->
+    <div id="pitchOverlay" class="pitch-overlay" onclick="closePitch()"></div>
+    <div id="pitchPanel" class="pitch-panel">
+        <div class="pitch-header">
+            <div class="pitch-title" id="pitchTitle">Loading...</div>
+            <div class="pitch-close" onclick="closePitch()">&#215;</div>
+        </div>
+        <div class="pitch-content">
+            <div class="status-bar" id="statusBar">
+                <div class="spinner"></div>
+                <span>Analyzing business...</span>
+            </div>
+            <div id="pitchSections"></div>
+        </div>
+    </div>
+
+    <!-- EMAIL MODAL -->
+    <div id="emailModalOverlay" class="modal-overlay" onclick="closeEmailModal()"></div>
+    <div id="emailModal" class="modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:1001;">
+        <div class="modal-header">
+            <h3>Send Email</h3>
+            <button class="modal-close" onclick="closeEmailModal()">&#215;</button>
+        </div>
+        <div class="modal-body">
+            <div class="email-preview" id="emailPreview"></div>
+            <div class="form-group">
+                <label>Recipient Email</label>
+                <input type="email" id="emailInput" class="form-input" placeholder="recipient@example.com">
+            </div>
+            <div id="emailError" class="error-message" style="display: none;"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeEmailModal()">Cancel</button>
+            <button class="btn" onclick="sendPitchEmail()">Send Email</button>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script>
+        let currentState = 'landing';
+        let currentLocation = null;
+        let industries = [];
+        let selectedLeadForEmail = null;
+        let currentLeadId = null;
+        let sellerProfile = null;
+        let selectedServices = [];
+        let pitchedBusinesses = {};
+        let rangeOptions = [];
+        let currentCountryCode = null;
+        let currentCountryName = null;
+        let currentDistrictName = null;
+
+        function setState(state) {
+            document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+            const el = document.getElementById(state);
+            if (el) { el.classList.add('active'); currentState = state; }
+            if (state === 'landing' || state === 'pipeline') {
+                const setupState = document.getElementById('setup');
+                if (setupState) {
+                    setupState.classList.remove('two-column-layout');
+                    document.querySelector('.results-column').style.display = 'none';
+                    document.getElementById('findLeadsBtn').style.display = 'block';
+                    document.getElementById('searchAgainBtn').style.display = 'none';
+                }
+            }
+        }
+
+        function goBack() {
+            if (currentState === 'setup') {
+                if (document.getElementById('setup').classList.contains('two-column-layout')) {
+                    document.getElementById('setup').classList.remove('two-column-layout');
+                    document.querySelector('.results-column').style.display = 'none';
+                    document.getElementById('findLeadsBtn').style.display = 'block';
+                    document.getElementById('searchAgainBtn').style.display = 'none';
+                } else { setState('landing'); }
+            } else if (currentState === 'results') { setState('setup'); }
+            else { setState('landing'); }
+        }
+
+        function searchAgain() {
+            const setupState = document.getElementById('setup');
+            setupState.classList.remove('two-column-layout');
+            document.querySelector('.results-column').style.display = 'none';
+            document.getElementById('findLeadsBtn').style.display = 'block';
+            document.getElementById('searchAgainBtn').style.display = 'none';
+            document.getElementById('leadsContainer').innerHTML = '';
+        }
+
+        async function detectLocation() {
+            if (!navigator.geolocation) { showError('Geolocation not supported'); return; }
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    await getLocationName(latitude, longitude);
+                },
+                () => {
+                    showError('Please enable location access. Using demo coordinates (London)...');
+                    currentLocation = { lat: 51.5074, lon: -0.1278, city: 'London', country: 'United Kingdom' };
+                    loadIndustries();
+                    setState('setup');
+                }
+            );
+        }
+
+        async function getLocationName(lat, lon) {
+            try {
+                const response = await fetch('/api/locate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat, lon })
+                });
+                if (!response.ok) throw new Error('Location failed');
+                const data = await response.json();
+                currentLocation = { lat, lon, ...data };
+                document.getElementById('locationBadge').innerHTML = `Detected: <strong>${data.city}, ${data.country}</strong>`;
+                document.getElementById('detectedLocation').textContent = `${data.city}, ${data.country}`;
+                await loadRangeOptions(lat, lon);
+                loadIndustries();
+                setState('setup');
+            } catch (error) { showError('Could not detect location: ' + error.message); }
+        }
+
+        async function loadRangeOptions(lat, lon) {
+            try {
+                const response = await fetch(`/api/range-options?lat=${lat}&lon=${lon}`);
+                if (!response.ok) return;
+                const data = await response.json();
+                rangeOptions = data.options || [];
+                currentCountryCode = data.country_code;
+                currentCountryName = data.country_name;
+                currentDistrictName = data.district_name;
+                const container = document.getElementById('rangeOptionsContainer');
+                if (!container) return;
+                container.innerHTML = '';
+                rangeOptions.forEach((option, index) => {
+                    const button = document.createElement('button');
+                    button.className = 'range-option';
+                    if (index === 0) button.classList.add('selected');
+                    button.setAttribute('data-range', option.value);
+                    button.onclick = function() { selectRange(this); };
+                    button.innerHTML = `${option.label}`;
+                    container.appendChild(button);
+                });
+                selectedRange = rangeOptions[0].value;
+                updateFindLeadsButtonLabel();
+            } catch (error) { console.error('[loadRangeOptions] Error:', error.message); }
+        }
+
+        function updateFindLeadsButtonLabel() {
+            const btn = document.getElementById('findLeadsBtn');
+            if (!btn) return;
+            let label = 'Find Leads \u2192';
+            if (selectedRange === 'nearby') label = 'Find Leads Nearby \u2192';
+            else if (selectedRange === 'district') label = `Find Leads in ${currentDistrictName} \u2192`;
+            else if (selectedRange === 'country') label = `Find Leads in ${currentCountryName} \u2192`;
+            else if (selectedRange === 'southern_africa') label = 'Find Leads Across Southern Africa \u2192';
+            else if (selectedRange === 'international') label = 'Find Leads Internationally \u2192';
+            btn.textContent = label;
+        }
+
+        function countryCodeToFlag(countryCode) {
+            if (!countryCode || countryCode.length !== 2) return '';
+            const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
+            return String.fromCodePoint(...codePoints);
+        }
+
+        function formatDistance(meters) {
+            if (meters < 1000) return Math.round(meters) + 'm';
+            return Math.round(meters / 1000) + 'km';
+        }
+
+        async function loadIndustries() {
+            try {
+                const response = await fetch('/api/industries');
+                const data = await response.json();
+                industries = data.industries || [];
+                const select = document.getElementById('industrySelect');
+                select.innerHTML = '<option value="">Choose an industry...</option>';
+                industries.forEach(ind => {
+                    const option = document.createElement('option');
+                    option.value = ind.id;
+                    option.textContent = ind.name;
+                    select.appendChild(option);
+                });
+            } catch (error) { showError('Could not load industries'); }
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!['pdf', 'docx'].includes(ext)) {
+                showError('Only PDF and DOCX files are supported');
+                document.getElementById('docInput').value = '';
+                return;
+            }
+            const maxSize = 10 * 1024 * 1024;
+            if (file.size > maxSize) {
+                showError(`File too large. Maximum 10MB. Your file: ${(file.size / 1024 / 1024).toFixed(1)}MB`);
+                document.getElementById('docInput').value = '';
+                return;
+            }
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSelected').style.display = 'flex';
+            document.getElementById('analyzeBtn').disabled = false;
+        }
+
+        async function analyzeDocument() {
+            const file = document.getElementById('docInput').files[0];
+            if (!file) return;
+            document.getElementById('analyzeBtn').disabled = true;
+            document.getElementById('analyzeBtn').textContent = 'Analyzing...';
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                const response = await fetch('/api/upload-profile', { method: 'POST', body: formData });
+                const result = await response.json();
+                if (!response.ok) {
+                    showError(result.error || 'Failed to analyze document');
+                    document.getElementById('analyzeBtn').disabled = false;
+                    document.getElementById('analyzeBtn').textContent = 'Analyze Document';
+                    return;
+                }
+                sellerProfile = result;
+                document.getElementById('profileName').textContent = `${result.person_or_company} \u00b7 ${result.profile_type === 'individual' ? 'Individual' : 'Company'}`;
+                document.getElementById('profileSummary').textContent = result.summary;
+                document.getElementById('profileInfo').classList.add('active');
+                displayServiceChips(result.services);
+                displayRecommendedIndustries(result.recommended_industries || []);
+                document.getElementById('sellerBanner').textContent = `Finding leads for: ${result.summary}`;
+                document.getElementById('sellerBanner').classList.add('active');
+                document.getElementById('analyzeBtn').textContent = 'Analyzed';
+                showToast('Profile analyzed successfully!', 'success');
+            } catch (error) {
+                showError('Error analyzing document: ' + error.message);
+                document.getElementById('analyzeBtn').disabled = false;
+                document.getElementById('analyzeBtn').textContent = 'Analyze Document';
+            }
+        }
+
+        function displayServiceChips(services) {
+            const container = document.getElementById('servicesList');
+            container.innerHTML = '';
+            if (!services || services.length === 0) {
+                container.innerHTML = '<p style="font-size:12px;color:#52525b;">No services found</p>';
+                return;
+            }
+            selectedServices = services.filter(s => s.confidence === 'high').map(s => s.name);
+            services.forEach(service => {
+                const isSelected = selectedServices.includes(service.name);
+                const isHighConfidence = service.confidence === 'high';
+                const chip = document.createElement('div');
+                chip.className = `service-pill ${isHighConfidence ? 'high-confidence' : ''} ${isSelected ? 'selected' : ''}`;
+                chip.setAttribute('data-service', service.name);
+                chip.innerHTML = `<span class="service-chip-label">${service.name}</span><span class="service-chip-confidence">(${service.confidence})</span>`;
+                chip.onclick = () => {
+                    if (chip.classList.contains('selected')) {
+                        chip.classList.remove('selected');
+                        selectedServices = selectedServices.filter(s => s !== service.name);
+                    } else {
+                        chip.classList.add('selected');
+                        selectedServices.push(service.name);
+                    }
+                };
+                container.appendChild(chip);
+            });
+        }
+
+        function displayRecommendedIndustries(recommendedIndustries) {
+            const section = document.getElementById('recommendedIndustriesSection');
+            const container = document.getElementById('recommendedIndustries');
+            if (!recommendedIndustries || recommendedIndustries.length === 0) { section.style.display = 'none'; return; }
+            section.style.display = 'block';
+            container.innerHTML = '';
+            const sorted = [...recommendedIndustries].sort((a, b) => b.fit_score - a.fit_score);
+            selectedIndustries = [];
+            sorted.forEach(industry => {
+                const isHighFit = industry.fit_score >= 70;
+                const card = document.createElement('div');
+                card.className = `industry-card ${isHighFit ? 'selected' : ''}`;
+                card.setAttribute('data-industry', industry.industry);
+                const displayName = industry.industry.charAt(0).toUpperCase() + industry.industry.slice(1).replace(/_/g, ' ');
+                card.innerHTML = `
+                    <div class="industry-card-name">${displayName}</div>
+                    <div class="industry-card-reason">${industry.reason}</div>
+                    <div class="industry-fit-bar"><div class="industry-fit-fill" style="width: ${industry.fit_score}%;"></div></div>
+                    <div class="industry-fit-score">Fit: ${industry.fit_score}%</div>
+                `;
+                card.onclick = () => {
+                    card.classList.toggle('selected');
+                    const isSelected = card.classList.contains('selected');
+                    if (isSelected) { selectedIndustries.push(industry.industry); }
+                    else { selectedIndustries = selectedIndustries.filter(i => i !== industry.industry); }
+                    updateIndustriesCount();
+                };
+                container.appendChild(card);
+                if (isHighFit) { card.classList.add('selected'); selectedIndustries.push(industry.industry); }
+            });
+            updateIndustriesCount();
+            if (industries && industries.length > sorted.length) {
+                document.getElementById('addMoreBtn').style.display = 'block';
+                populateAdditionalIndustries(sorted.map(r => r.industry));
+            } else { document.getElementById('addMoreBtn').style.display = 'none'; }
+        }
+
+        function updateIndustriesCount() {
+            document.getElementById('industriesCount').textContent = `${selectedIndustries.length} selected`;
+        }
+
+        function populateAdditionalIndustries(recommended) {
+            const select = document.getElementById('additionalIndustriesSelect');
+            select.innerHTML = '<option value="">Select an industry...</option>';
+            industries.forEach(ind => {
+                if (!recommended.includes(ind.id)) {
+                    const option = document.createElement('option');
+                    option.value = ind.id;
+                    option.textContent = ind.name;
+                    select.appendChild(option);
+                }
+            });
+        }
+
+        function expandAddMore() {
+            const dropdown = document.getElementById('addMoreDropdown');
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function addIndustry(select) {
+            const industryId = select.value;
+            if (!industryId) return;
+            const industry = industries.find(i => i.id === industryId);
+            if (!industry) return;
+            if (!selectedIndustries.includes(industryId)) selectedIndustries.push(industryId);
+            updateIndustriesCount();
+            select.value = '';
+            document.getElementById('addMoreDropdown').style.display = 'none';
+        }
+
+        const uploadArea = document.getElementById('uploadArea');
+        if (uploadArea) {
+            uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.classList.add('dragging'); });
+            uploadArea.addEventListener('dragleave', () => { uploadArea.classList.remove('dragging'); });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragging');
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    document.getElementById('docInput').files = e.dataTransfer.files;
+                    handleFileSelect({ target: { files: [file] } });
+                }
+            });
+        }
+
+        document.getElementById('limitSlider')?.addEventListener('input', (e) => {
+            document.getElementById('limitValue').textContent = e.target.value;
+        });
+
+        let currentLocationMode = 'location';
+        let selectedRange = 'nearby';
+
+        function toggleLocationMode(mode) {
+            currentLocationMode = mode;
+            document.getElementById('useLocationBtn').classList.toggle('active', mode === 'location');
+            document.getElementById('searchCityBtn').classList.toggle('active', mode === 'city');
+            document.getElementById('locationModeContent').classList.toggle('active', mode === 'location');
+            document.getElementById('cityModeContent').classList.toggle('active', mode === 'city');
+        }
+
+        function selectRange(button) {
+            document.querySelectorAll('.range-option').forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+            selectedRange = button.getAttribute('data-range');
+            updateFindLeadsButtonLabel();
+        }
+
+        async function findLeads() {
+            let industriesList = [...(selectedIndustries || [])];
+            if (industriesList.length === 0) {
+                const industrySelect = document.getElementById('industrySelect').value;
+                if (industrySelect) industriesList = [industrySelect];
+            }
+            const selectedServicePills = Array.from(document.querySelectorAll('.service-pill.selected'))
+                .map(pill => pill.getAttribute('data-service')).filter(s => s);
+            const manualService = document.getElementById('serviceInput')?.value?.trim();
+            const service = selectedServicePills.length > 0 ? selectedServicePills.join(', ') : manualService;
+            const limit = parseInt(document.getElementById('limitSlider').value);
+
+            if (industriesList.length === 0 || !service) { showError('Please select industries and enter a service'); return; }
+
+            document.getElementById('leadsContainer').innerHTML =
+                '<div class="loading"><div class="loading-spinner"></div><p>Searching for businesses...</p></div>';
+
+            try {
+                const requestBody = { lat: currentLocation.lat, lon: currentLocation.lon, industries: industriesList, service, limit, range: selectedRange };
+                if (currentLocationMode === 'city') {
+                    const cityInput = document.getElementById('cityInput').value.trim();
+                    if (!cityInput) { showError('Please enter a city name'); return; }
+                    requestBody.city_override = cityInput;
+                }
+                if (sellerProfile) requestBody.seller_profile = sellerProfile;
+
+                const response = await fetch('/api/find', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+                if (!response.ok) throw new Error('Search failed');
+                const data = await response.json();
+                displayLeads(data.businesses, data.location, data.ranked);
+            } catch (error) {
+                showError('Search failed: ' + error.message);
+                setState('setup');
+            }
+        }
+
+        function displayLeads(businesses, location, ranked = false) {
+            const setupState = document.getElementById('setup');
+            setupState.classList.add('two-column-layout');
+            document.querySelector('.results-column').style.display = 'block';
+            document.getElementById('findLeadsBtn').style.display = 'none';
+            document.getElementById('searchAgainBtn').style.display = 'block';
+
+            let container = document.getElementById('leadsContainer');
+
+            let resultTitle = `Found ${businesses.length} business${businesses.length !== 1 ? 'es' : ''}`;
+            if (selectedRange === 'nearby') resultTitle += ` near ${location.city}`;
+            else if (selectedRange === 'district') resultTitle += ` in ${currentDistrictName}`;
+            else if (selectedRange === 'country') resultTitle += ` in ${currentCountryName}`;
+            else if (selectedRange === 'southern_africa') resultTitle += ` across Southern Africa`;
+            else if (selectedRange === 'international') resultTitle += ` internationally`;
+            else resultTitle += ` in ${location.display_name || location.city}`;
+            document.getElementById('resultsTitle').textContent = resultTitle;
+
+            if (sellerProfile) {
+                document.getElementById('resultSellerBanner').textContent = `Finding leads for: ${sellerProfile.summary}`;
+                document.getElementById('resultSellerBanner').classList.add('active');
+            } else { document.getElementById('resultSellerBanner').classList.remove('active'); }
+
+            if (businesses.length === 0) {
+                container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:48px;color:#52525b;font-size:13px;">No businesses found. Try a different industry or expand your search range.</div>';
+                return;
+            }
+
+            if (businesses.length < 3 && selectedRange !== 'international') {
+                let suggestion = '';
+                if (selectedRange === 'nearby') suggestion = 'Only ' + businesses.length + ' result' + (businesses.length !== 1 ? 's' : '') + ' found. Try expanding to District or Country range.';
+                else if (selectedRange === 'district') suggestion = 'Only ' + businesses.length + ' result' + (businesses.length !== 1 ? 's' : '') + ' found. Try expanding to Country range.';
+                if (suggestion) {
+                    const suggestionDiv = document.createElement('div');
+                    suggestionDiv.style.cssText = 'grid-column:1/-1;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15);color:#f59e0b;padding:10px 14px;border-radius:7px;font-size:12px;margin-bottom:14px;';
+                    suggestionDiv.textContent = suggestion;
+                    container.innerHTML = suggestionDiv.outerHTML + '<div id="leadsContainerInner" class="leads-grid" style="grid-column:1/-1"></div>';
+                    container = document.getElementById('leadsContainerInner');
+                }
+            }
+
+            container.innerHTML = businesses.map((b, i) => {
+                let fitBadgeClass = 'fit-badge-grey';
+                let fitText = '';
+                if (b.quick_fit_score !== undefined) {
+                    const score = b.quick_fit_score;
+                    if (score >= 85) { fitBadgeClass = 'fit-badge-gold'; fitText = `${score}% fit`; }
+                    else if (score >= 70) { fitBadgeClass = 'fit-badge-silver'; fitText = `${score}% fit`; }
+                    else if (score >= 50) { fitBadgeClass = 'fit-badge-bronze'; fitText = `${score}% fit`; }
+                    else { fitBadgeClass = 'fit-badge-grey'; fitText = `${score}% fit`; }
+                }
+                let reasonsHtml = '';
+                if (b.quick_fit_reasons && b.quick_fit_reasons.length > 0) {
+                    const reasons = b.quick_fit_reasons.slice(0, 2).map(r => r.split('(+')[0].trim().replace('\u2713 ', '')).join(' \u00b7 ');
+                    reasonsHtml = `<div class="lead-reasons">${escapeHtml(reasons)}</div>`;
+                }
+                return `
+                    <div class="lead-card" data-business-name="${escapeHtml(b.name)}" data-business-index="${i}">
+                        <div class="lead-header">
+                            <div class="lead-name">${escapeHtml(b.name)}</div>
+                            <div class="lead-location">${countryCodeToFlag(b.country_code)} ${escapeHtml(b.city)} &middot; ${escapeHtml(b.industry)} &middot; ${formatDistance(b.distance_m)}</div>
+                        </div>
+                        <div class="lead-meta">
+                            <div class="badge badge-industry">${escapeHtml(b.industry)}</div>
+                            <div class="badge badge-distance">${formatDistance(b.distance_m)}</div>
+                            ${b.has_website ? '<div class="badge badge-website">Has Website</div>' : '<div class="badge badge-no-website">No Website</div>'}
+                            ${b.has_phone ? '<div class="badge badge-phone">Has Phone</div>' : ''}
+                            <div class="lead-fit-badge">${fitText ? `<span class="badge ${fitBadgeClass}">${fitText}</span>` : ''}</div>
+                        </div>
+                        ${reasonsHtml}
+                        <div class="lead-address">${escapeHtml(b.address || b.city)}</div>
+                        <div class="lead-intel">Intel gathered on pitch generation</div>
+                        <button class="lead-btn generate-pitch-btn" data-index="${i}">Generate Pitch &rarr;</button>
+                    </div>
+                `;
+            }).join('');
+
+            window.businessesData = businesses;
+        }
+
+        async function generatePitch(index) {
+            const business = window.businessesData[index];
+            const selectedServicePills = Array.from(document.querySelectorAll('.service-pill.selected'))
+                .map(pill => pill.getAttribute('data-service')).filter(s => s);
+            const manualService = document.getElementById('serviceInput')?.value?.trim();
+            const service = selectedServicePills.length > 0 ? selectedServicePills.join(', ') : manualService;
+
+            document.getElementById('pitchTitle').textContent = escapeHtml(business.name);
+            document.getElementById('pitchSections').innerHTML = '';
+            document.getElementById('statusBar').innerHTML = '<div class="spinner"></div><span>Analyzing business...</span>';
+
+            const overlay = document.getElementById('pitchOverlay');
+            const panel = document.getElementById('pitchPanel');
+            overlay.classList.add('active');
+            panel.style.display = 'block';
+
+            document.getElementById('statusBar').innerHTML = '<div class="spinner"></div><span>Gathering web intelligence...</span>';
+
+            try {
+                const requestBody = { business, service };
+                if (sellerProfile) requestBody.seller_profile = sellerProfile;
+
+                const response = await fetch('/api/research', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+                if (!response.ok) throw new Error('Research failed');
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.length > 0 ? lines[lines.length - 1] : buffer;
+
+                    for (let i = 0; i < lines.length - 1; i++) {
+                        const line = lines[i];
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const rawEvent = line.slice(6);
+                                const json = JSON.parse(rawEvent);
+                                if (json.type === 'chunk') {
+                                    const statusBar = document.getElementById('statusBar');
+                                    if (json.content && json.content.includes('score') || json.content.includes('pain')) {
+                                        statusBar.innerHTML = '<div class="spinner"></div><span>ASI-1 analyzing...</span>';
+                                    } else if (json.content && json.content.includes('email')) {
+                                        statusBar.innerHTML = '<div class="spinner"></div><span>Generating email...</span>';
+                                    }
+                                } else if (json.type === 'complete') {
+                                    displayPitch(json.result, json.debug, business);
+                                } else if (json.type === 'error') {
+                                    showError('Error: ' + json.message + (json.error_line ? ` (line ${json.error_line})` : ''));
+                                }
+                            } catch (e) { /* ignore incomplete chunks */ }
+                        }
+                    }
+                }
+            } catch (error) { showError('Pitch generation failed: ' + error.message); }
+        }
+
+        function displayPitch(result, debug, business) {
+            const container = document.getElementById('pitchSections');
+            const statusBar = document.getElementById('statusBar');
+            statusBar.innerHTML = '<span style="color:#22c55e;font-weight:600;">&#10003; Ready</span>';
+            statusBar.style.background = 'rgba(34,197,94,0.08)';
+            statusBar.style.borderColor = 'rgba(34,197,94,0.2)';
+
+            const fitScore = result?.fit_score ?? 5;
+            const scoreReasoning = result?.score_reasoning ?? 'No reasoning available';
+            const painPoints = Array.isArray(result?.pain_points) ? result.pain_points : [];
+            const bestAngle = result?.best_angle ?? 'No specific angle identified';
+            const emailOpening = result?.email_opening ?? 'Hello,';
+            const emailSubject = result?.email_subject ?? 'Untitled';
+            const emailBody = result?.email_body ?? 'No body';
+            const confidence = result?.confidence ?? 'medium';
+
+            const scoreClass = `score-${fitScore}`;
+            const confidenceClass = `confidence-${confidence}`;
+
+            const isPersonalized = sellerProfile !== null;
+            const personalizationBanner = isPersonalized
+                ? `<div class="personalization-notice personalized">Pitch personalized using your profile</div>`
+                : `<div class="personalization-notice generic">Generic pitch &mdash; upload profile for personalization</div>`;
+
+            const quickFitScore = Math.round(business.quick_fit_score || 0);
+            const quickFitPercent = Math.round((quickFitScore / 100) * 100);
+            const asiScore = fitScore;
+            const asiPercent = asiScore * 10;
+            const scoreDiff = asiPercent - quickFitPercent;
+            const isWarn = Math.abs(scoreDiff) > 15;
+            const scoreDiffWarning = isWarn ? 'Score lower than expected &mdash; read reasoning' : 'AI confirmed strong lead';
+
+            let html = `
+                ${personalizationBanner}
+                <div class="section">
+                    <div class="section-label">Fit Score</div>
+                    <div class="score-comparison">
+                        <div class="score-comparison-row">
+                            <div class="score-col">
+                                <div class="score-col-label">Quick Fit Score</div>
+                                <div class="score-col-value">${quickFitPercent}%</div>
+                            </div>
+                            <div class="score-arrow">&rarr;</div>
+                            <div class="score-col">
+                                <div class="score-col-label">ASI-1 Score</div>
+                                <div class="score-col-value asi">${asiScore}/10 <span style="color:#52525b;font-size:10px;font-weight:400;">Refined</span></div>
+                            </div>
+                        </div>
+                        <div class="score-comparison-note ${isWarn ? 'warn' : 'good'}">${scoreDiffWarning}</div>
+                    </div>
+                    <div class="fit-score">
+                        <div class="score-circle ${scoreClass}">${fitScore}</div>
+                        <div class="score-info">
+                            <h3>Likelihood to Buy</h3>
+                            <p>${escapeHtml(scoreReasoning)}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="section">
+                    <div class="section-label">Pain Points</div>
+                    <div class="pain-points">
+                        ${painPoints.length > 0 ? painPoints.map(p => `<div class="pain-point">&bull; ${escapeHtml(String(p || ''))}</div>`).join('') : '<div class="pain-point">&bull; No pain points identified</div>'}
+                    </div>
+                </div>
+                <div class="section">
+                    <div class="section-label">Best Angle</div>
+                    <div class="best-angle">${escapeHtml(bestAngle)}</div>
+                </div>
+                <div class="section">
+                    <div class="section-label">Email Template <span style="font-size:10px;color:#52525b;font-weight:400;">(edit before sending)</span></div>
+                    <div style="margin-bottom:12px;">
+                        <span class="field-label">Subject</span>
+                        <input type="text" id="pitchEmailSubject" value="${escapeHtml(emailSubject)}" class="pitch-email-input">
+                        <button id="regenerateEmailBtn" class="regen-btn">Regenerate</button>
+                    </div>
+                    <div style="margin-bottom:12px;">
+                        <span class="field-label">Body</span>
+                        <textarea id="pitchEmailBody" class="pitch-textarea">${escapeHtml(emailOpening + '\n\n' + emailBody)}</textarea>
+                    </div>
+                    <button class="copy-btn" onclick="copyEmail('${btoa(emailSubject + '\\n\\n' + emailOpening + '\\n\\n' + emailBody)}')">Copy Email</button>
+                </div>
+                <div class="section">
+                    <div class="section-label">Confidence</div>
+                    <div class="confidence-badge ${confidenceClass}">${confidence.toUpperCase()}</div>
+                </div>
+            `;
+
+            if (business && business.web_intel) {
+                const socials = business.web_intel.socials || {};
+                const websiteContent = business.web_intel.website_content || null;
+                let socialLinksHtml = '';
+                const socialPlatforms = [
+                    { key: 'facebook', label: 'Facebook' }, { key: 'instagram', label: 'Instagram' },
+                    { key: 'linkedin', label: 'LinkedIn' }, { key: 'twitter', label: 'Twitter' }
+                ];
+                for (const platform of socialPlatforms) {
+                    if (socials[platform.key]) {
+                        const url = socials[platform.key].url || '';
+                        const snippet = socials[platform.key].snippet || '';
+                        socialLinksHtml += `
+                            <div style="padding:10px;border-left:2px solid #3f3f46;background:#18181b;border-radius:4px;margin-bottom:8px;">
+                                <div style="font-weight:600;color:#a1a1aa;font-size:12px;margin-bottom:4px;">${platform.label}</div>
+                                <a href="${escapeHtml(url)}" target="_blank" style="color:#38bdf8;font-size:11px;text-decoration:underline;">View Profile</a>
+                                ${snippet ? `<div style="font-size:11px;color:#52525b;margin-top:4px;">${escapeHtml(snippet)}</div>` : ''}
+                            </div>
+                        `;
+                    }
+                }
+                if (socialLinksHtml || websiteContent) {
+                    html += `
+                        <div class="section">
+                            <div class="section-label">Web Presence</div>
+                            <div>${socialLinksHtml}</div>
+                            ${websiteContent ? `<div style="padding:10px;border-left:2px solid #3f3f46;background:#18181b;border-radius:4px;font-size:12px;color:#a1a1aa;line-height:1.5;">${escapeHtml(websiteContent)}</div>` : ''}
+                        </div>
+                    `;
+                }
+            }
+
+            if (debug) {
+                html += `
+                    <div class="debug-section">
+                        <div class="debug-toggle" onclick="toggleDebug(this)">
+                            <span>Debug Info</span><span>&rsaquo;</span>
+                        </div>
+                        <div class="debug-content">
+                            <div style="font-weight:600;color:#71717a;margin-bottom:6px;font-size:10px;text-transform:uppercase;letter-spacing:0.4px;">Prompt Sent</div>
+                            <div class="debug-box">${escapeHtml(debug.prompt_sent)}</div>
+                            <div style="font-weight:600;color:#71717a;margin-bottom:6px;font-size:10px;text-transform:uppercase;letter-spacing:0.4px;margin-top:8px;">Response Excerpt</div>
+                            <div class="debug-box">${escapeHtml(debug.raw_response)}</div>
+                            <div style="margin-top:8px;font-size:11px;color:#52525b;display:flex;flex-direction:column;gap:3px;">
+                                <div>Model: ${debug.model}</div>
+                                <div>Timestamp: ${debug.timestamp}</div>
+                                <div>ASI-1 Web Search: ${debug.web_search}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+
+            const regenerateBtn = document.getElementById('regenerateEmailBtn');
+            if (regenerateBtn) {
+                regenerateBtn.addEventListener('click', async () => { await regenerateEmail(business, result); });
+            }
+
+            window.discoveredEmail = result.contact_email || null;
+            pitchedBusinesses[business.name] = { fit_score: fitScore, quick_fit_score: business.quick_fit_score || 0 };
+            updateBusinessCardWithASI1Score(business.name, fitScore);
+            if (Object.keys(pitchedBusinesses).length >= 3) showBestLeadsBanner();
+
+            const service = document.getElementById('serviceInput').value;
+            saveLead(business, result, service);
+        }
+
+        function toggleDebug(el) {
+            el.classList.toggle('active');
+            el.nextElementSibling.classList.toggle('active');
+        }
+
+        function copyEmail(encoded) {
+            const email = atob(encoded);
+            navigator.clipboard.writeText(email).then(() => {
+                const btn = event.target;
+                const original = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 2000);
+            });
+        }
+
+        async function regenerateEmail(business, pitchResult) {
+            try {
+                const btn = document.getElementById('regenerateEmailBtn');
+                const originalText = btn.textContent;
+                btn.textContent = 'Regenerating...';
+                btn.disabled = true;
+                const service = document.getElementById('serviceInput').value || 'General Service';
+                const response = await fetch('/api/research', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ business, service, seller_profile: sellerProfile })
+                });
+                if (!response.ok) throw new Error('Failed to regenerate email');
+                let fullData = '';
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    fullData += decoder.decode(value);
+                }
+                const result = JSON.parse(fullData);
+                document.getElementById('pitchEmailSubject').value = result.email_subject || '';
+                document.getElementById('pitchEmailBody').value = (result.email_opening || '') + '\n\n' + (result.email_body || '');
+                btn.textContent = originalText;
+                btn.disabled = false;
+                showToast('Email regenerated!', 'success');
+            } catch (error) {
+                showToast('Failed to regenerate: ' + error.message, 'error');
+                const btn = document.getElementById('regenerateEmailBtn');
+                btn.textContent = 'Regenerate';
+                btn.disabled = false;
+            }
+        }
+
+        function sendEmailFromPitch(businessNameEncoded, emailSubjectEncoded) {
+            showToast('Use the pipeline to send this email', 'info');
+        }
+
+        function closePitch() {
+            document.getElementById('pitchOverlay').classList.remove('active');
+            document.getElementById('pitchPanel').style.display = 'none';
+        }
+
+        function updateBusinessCardWithASI1Score(businessName, asiScore) {
+            const cards = document.querySelectorAll('[data-business-name]');
+            for (const card of cards) {
+                if (card.getAttribute('data-business-name') === businessName) {
+                    const badgeContainer = card.querySelector('.lead-fit-badge');
+                    if (badgeContainer) {
+                        const asiPercent = asiScore * 10;
+                        let badgeClass = 'fit-badge-grey';
+                        if (asiPercent >= 85) badgeClass = 'fit-badge-gold';
+                        else if (asiPercent >= 70) badgeClass = 'fit-badge-silver';
+                        else if (asiPercent >= 50) badgeClass = 'fit-badge-bronze';
+                        badgeContainer.innerHTML = `<span class="badge ${badgeClass}" style="animation:badgeFlash 0.5s ease;">${asiPercent}% <span style="font-size:9px;opacity:0.5;">AI</span></span>`;
+                    }
+                    break;
+                }
+            }
+        }
+
+        function showBestLeadsBanner() {
+            let bestLead = null;
+            let bestScore = -1;
+            for (const [name, data] of Object.entries(pitchedBusinesses)) {
+                if (data.fit_score > bestScore) { bestScore = data.fit_score; bestLead = name; }
+            }
+            if (bestLead && bestScore >= 0) {
+                const resultsBanner = document.getElementById('resultsBanner');
+                if (resultsBanner) {
+                    const bannerHtml = `
+                        <div class="best-leads-banner">
+                            <div class="best-leads-banner-title">Top Lead</div>
+                            <div class="best-leads-banner-content">${escapeHtml(bestLead)} &mdash; ASI-1 scored ${bestScore}/10</div>
+                        </div>
+                    `;
+                    const existingBanner = resultsBanner.querySelector('[data-banner="best-leads"]');
+                    if (existingBanner) { existingBanner.innerHTML = bannerHtml; }
+                    else {
+                        const newBanner = document.createElement('div');
+                        newBanner.setAttribute('data-banner', 'best-leads');
+                        newBanner.innerHTML = bannerHtml;
+                        resultsBanner.insertBefore(newBanner, resultsBanner.firstChild);
+                    }
+                }
+            }
+        }
+
+        function showError(message) {
+            console.error(message);
+            const container = document.querySelector('.container');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = message;
+            container.insertBefore(errorDiv, container.firstChild);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            if (tabName === 'find') {
+                document.getElementById('landing').classList.add('active');
+                document.getElementById('pipeline').classList.remove('active');
+                setState('landing');
+            } else if (tabName === 'pipeline') { loadPipeline(); }
+        }
+
+        async function loadPipeline() {
+            try {
+                document.querySelectorAll('.state').forEach(el => el.classList.remove('active'));
+                document.getElementById('pipeline').classList.add('active');
+                currentState = 'pipeline';
+
+                const response = await fetch('/api/leads');
+                if (!response.ok) throw new Error('Failed to load pipeline');
+                const data = await response.json();
+                const leads = data.leads || [];
+                const stats = data.stats || { total: 0, researched: 0, sent: 0, opened: 0, replied: 0 };
+
+                document.getElementById('statResearched').textContent = stats.researched;
+                document.getElementById('statSent').textContent = stats.sent;
+                document.getElementById('statOpened').textContent = stats.opened;
+                document.getElementById('statReplied').textContent = stats.replied;
+
+                const tbody = document.getElementById('pipelineBody');
+                if (leads.length === 0) {
+                    tbody.innerHTML = `
+                        <tr><td colspan="7" style="text-align:center;padding:48px;color:#52525b;font-size:13px;">
+                            No leads yet. <a href="#" onclick="switchTab('find');return false;" style="color:#38bdf8;font-weight:600;text-decoration:underline;">Start finding leads &rarr;</a>
+                        </td></tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = leads.map(lead => `
+                    <tr>
+                        <td>
+                            <div class="lead-name">${escapeHtml(lead.business_name)}</div>
+                            <span class="industry-badge">${escapeHtml(lead.industry)}</span>
+                        </td>
+                        <td>${escapeHtml(lead.city)}, ${escapeHtml(lead.country)}</td>
+                        <td>${escapeHtml(lead.service)}</td>
+                        <td><span class="fit-badge fit-${lead.fit_score || 5}">${lead.fit_score || '?'}/10</span></td>
+                        <td><span class="status-pill status-${lead.status}">${formatStatus(lead.status)}</span></td>
+                        <td>${lead.to_email ? `<span class="email-text">${escapeHtml(lead.to_email)}</span>` : `<input type="email" class="email-input" placeholder="Enter email" id="email-${lead.id}">`}</td>
+                        <td class="action-buttons">
+                            ${lead.status === 'researched' ? `<button class="btn-sm primary" onclick="openEmailModal('${lead.id}','${escapeHtml(lead.business_name)}','${escapeHtml(lead.email_subject)}')">Send Email</button>` : ''}
+                            ${(lead.status === 'sent' || lead.status === 'opened') ? `<button class="btn-sm" onclick="markReplied('${lead.id}')">Mark Replied</button>` : ''}
+                            <button class="btn-sm danger" onclick="deleteLead('${lead.id}')">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) { showError('Could not load pipeline: ' + error.message); }
+        }
+
+        function formatStatus(status) {
+            const map = { 'researched': 'Researched', 'sent': 'Sent', 'opened': 'Opened', 'replied': 'Replied' };
+            return map[status] || status;
+        }
+
+        async function refreshPipeline() {
+            const btn = event.target;
+            btn.style.animation = 'spin 0.6s linear';
+            await loadPipeline();
+            btn.style.animation = '';
+        }
+
+        function openEmailModal(leadId, businessName, emailSubject) {
+            selectedLeadForEmail = leadId;
+            const discoveredEmail = window.discoveredEmail;
+            document.getElementById('emailInput').value = discoveredEmail || '';
+            document.getElementById('emailError').style.display = 'none';
+
+            const preview = document.getElementById('emailPreview');
+            preview.innerHTML = `
+                <div style="background:#09090b;padding:11px;border-radius:6px;border:1px solid #27272a;">
+                    <div style="color:#52525b;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">To</div>
+                    <div style="color:#fafafa;font-weight:600;margin-bottom:8px;font-size:12px;">${escapeHtml(businessName)}</div>
+                    <div style="color:#52525b;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;">Subject</div>
+                    <div style="color:#a1a1aa;font-size:12px;">${escapeHtml(emailSubject)}</div>
+                </div>
+            `;
+
+            document.getElementById('emailModalOverlay').classList.add('active');
+            document.getElementById('emailModal').style.display = 'block';
+            document.getElementById('emailInput').focus();
+        }
+
+        function closeEmailModal() {
+            document.getElementById('emailModalOverlay').classList.remove('active');
+            document.getElementById('emailModal').style.display = 'none';
+            selectedLeadForEmail = null;
+        }
+
+        async function sendPitchEmail() {
+            if (!selectedLeadForEmail) return;
+            const email = document.getElementById('emailInput').value.trim();
+            if (!email) {
+                document.getElementById('emailError').textContent = 'Please enter a valid email';
+                document.getElementById('emailError').style.display = 'block';
+                return;
+            }
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                document.getElementById('emailError').textContent = 'Please enter a valid email address';
+                document.getElementById('emailError').style.display = 'block';
+                return;
+            }
+            try {
+                const response = await fetch('/api/leads/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lead_id: selectedLeadForEmail, to_email: email })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || result.error || 'Failed to send email');
+                closeEmailModal();
+                showToast('Email sent successfully!', 'success');
+                await loadPipeline();
+            } catch (error) {
+                document.getElementById('emailError').textContent = error.message;
+                document.getElementById('emailError').style.display = 'block';
+            }
+        }
+
+        async function markReplied(leadId) {
+            try {
+                const response = await fetch(`/api/leads/${leadId}/reply`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                if (!response.ok) throw new Error('Failed to mark as replied');
+                showToast('Lead marked as replied!', 'success');
+                await loadPipeline();
+            } catch (error) { showError(error.message); }
+        }
+
+        async function deleteLead(leadId) {
+            if (!confirm('Are you sure you want to delete this lead?')) return;
+            try {
+                const response = await fetch(`/api/leads/${leadId}`, { method: 'DELETE' });
+                if (!response.ok) throw new Error('Failed to delete lead');
+                showToast('Lead deleted', 'info');
+                await loadPipeline();
+            } catch (error) { showError(error.message); }
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        async function saveLead(business, pitchResult, service) {
+            try {
+                const response = await fetch('/api/leads/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ business, pitch_result: pitchResult, service })
+                });
+                if (!response.ok) throw new Error('Failed to save lead');
+                const data = await response.json();
+                currentLeadId = data.lead_id;
+                showToast('Saved to Pipeline', 'success');
+                return data.lead;
+            } catch (error) {
+                console.error('Save lead error:', error);
+                showToast('Could not save to pipeline: ' + error.message, 'warning');
+                return null;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {});
+
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('.generate-pitch-btn')) {
+                const index = parseInt(e.target.getAttribute('data-index'));
+                generatePitch(index);
+            }
+        });
+
+    </script>
+</body>
+</html>
