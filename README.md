@@ -55,6 +55,8 @@ GMAIL_APP_PASSWORD=your_app_password
 ### 3. Run the Application
 ```bash
 python -m uvicorn main:app --reload --port 8000
+or
+python main.py
 ```
 Then visit `http://localhost:8000` in your browser.
 
