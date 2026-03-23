@@ -7,5 +7,7 @@ requests
 beautifulsoup4
 googlesearch-python
 feedparser
+python-multipart
 pymupdf
 python-docx
+aiofiles
